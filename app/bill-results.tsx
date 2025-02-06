@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,20 +9,22 @@ import Image from "next/image";
 
 const BillResults = ({ results }) => {
   const [billArrangement, setBillArrangement] = useState(results);
+  const [currentBtnView, setCurrentBtnView] = useState("relevance");
 
   const sortbydate = (results) => {
     const testing = Object.values(results).sort(
       (a, b) => new Date(b.last_action_date) - new Date(a.last_action_date)
     );
-
+    console.log(testing);
     setBillArrangement(testing);
+    setCurrentBtnView("date");
   };
 
   const sortByRelevance = (results) => {
     const billsByRelevance = Object.values(results).sort(
       (a, b) => b.relevance - a.relevance
     );
-
+    setCurrentBtnView("relevance");
     setBillArrangement(billsByRelevance);
   };
   const sortByBillNum = (results) => {
@@ -29,6 +32,7 @@ const BillResults = ({ results }) => {
       (a, b) => a.bill_id - b.bill_id
     );
     console.log(billsByBillNum);
+    setCurrentBtnView("billID");
     setBillArrangement(billsByBillNum);
   };
 
@@ -55,13 +59,31 @@ const BillResults = ({ results }) => {
       </header>
       <div className="w-full h-fit mb-10 flex flex-col items-center justify-center gap-x-5">
         <div className="flex w-full h-fit justify-center gap-x-5">
-          <Button variant="outline" onClick={() => sortbydate(results)}>
+          <Button
+            className={cn(
+              currentBtnView === "date" ? "bg-slate-100" : "bg-white"
+            )}
+            variant="outline"
+            onClick={() => sortbydate(results)}
+          >
             View latest
           </Button>
-          <Button variant="outline" onClick={() => sortByRelevance(results)}>
+          <Button
+            className={cn(
+              currentBtnView === "relevance" ? "bg-slate-100" : "bg-white"
+            )}
+            variant="outline"
+            onClick={() => sortByRelevance(results)}
+          >
             View by Relevance
           </Button>
-          <Button variant="outline" onClick={() => sortByBillNum(results)}>
+          <Button
+            className={cn(
+              currentBtnView === "billID" ? "bg-slate-100" : "bg-white"
+            )}
+            variant="outline"
+            onClick={() => sortByBillNum(results)}
+          >
             View by Bill ID
           </Button>
         </div>
@@ -80,7 +102,7 @@ const BillResults = ({ results }) => {
       <main className="h-fit w-full pb-10 flex flex-col lg:grid lg:grid-cols-3  ">
         {Object.entries(billArrangement).map(
           ([key, val]) =>
-            key !== "summary" && (
+            Number(key) < 50 && (
               <div
                 key={key}
                 className="hover:scale-105 transition-transform ease-in-out delay-100 bg-slate-100 text-xs md:text-sm gap-y-3 rounded-lg items-start justify-start text-left p-5 flex flex-col m-3 "
@@ -109,7 +131,7 @@ const BillResults = ({ results }) => {
                   </div>
                 </div>
                 <p>
-                  <span className="font-bold text-gray-500">Relevance:</span>
+                  <span className="font-bold text-gray-500">Relevance: </span>
                   {val.relevance}
                 </p>
                 <p>
