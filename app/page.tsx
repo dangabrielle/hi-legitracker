@@ -4,24 +4,6 @@ import BillResults from "./bill-results";
 
 import SkeletonCard from "@/components/skeleton-card";
 
-// type BillType = {
-//   relevance: number;
-//   state: string;
-//   bill_number: string;
-//   bill_id: number;
-//   change_hash: string;
-//   url: string;
-//   text_url: string;
-//   research_url: string;
-//   last_action_date: string;
-//   last_action: string;
-//   title: string;
-// };
-
-// type BillQuery = {
-//   [key: string]: BillType;
-// };
-
 // const bill = {
 //   "28": {
 //     last_action_date: "2025-01-30",

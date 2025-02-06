@@ -7,11 +7,28 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 
-const BillResults = ({ results }) => {
-  const [billArrangement, setBillArrangement] = useState(results);
+type BillType = {
+  relevance: number;
+  state: string;
+  bill_number: string;
+  bill_id: number;
+  change_hash: string;
+  url: string;
+  text_url: string;
+  research_url: string;
+  last_action_date: string;
+  last_action: string;
+  title: string;
+};
+
+type BillQuery = {
+  [key: string]: BillType;
+};
+const BillResults = ({ results }: { results: BillQuery }) => {
+  const [billArrangement, setBillArrangement] = useState<BillQuery>(results);
   const [currentBtnView, setCurrentBtnView] = useState("relevance");
 
-  const sortbydate = (results) => {
+  const sortbydate = (results: BillQuery) => {
     const testing = Object.values(results).sort(
       (a, b) => new Date(b.last_action_date) - new Date(a.last_action_date)
     );
@@ -20,14 +37,14 @@ const BillResults = ({ results }) => {
     setCurrentBtnView("date");
   };
 
-  const sortByRelevance = (results) => {
+  const sortByRelevance = (results: BillQuery) => {
     const billsByRelevance = Object.values(results).sort(
       (a, b) => b.relevance - a.relevance
     );
     setCurrentBtnView("relevance");
     setBillArrangement(billsByRelevance);
   };
-  const sortByBillNum = (results) => {
+  const sortByBillNum = (results: BillQuery) => {
     const billsByBillNum = Object.values(results).sort(
       (a, b) => a.bill_id - b.bill_id
     );
@@ -36,7 +53,7 @@ const BillResults = ({ results }) => {
     setBillArrangement(billsByBillNum);
   };
 
-  const handleQuery = (e) => {
+  const handleQuery = (e: string) => {
     const filteredBills = Object.values(results).filter((bill) =>
       bill?.title?.toLowerCase().includes(e.target.value.toLowerCase())
     );
