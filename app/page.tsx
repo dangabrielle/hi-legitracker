@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import BillResults from "./bill-results";
 
 import SkeletonCard from "@/components/skeleton-card";
+
 // type BillType = {
 //   relevance: number;
 //   state: string;
@@ -39,7 +40,7 @@ import SkeletonCard from "@/components/skeleton-card";
 async function getData() {
   try {
     const data = await fetch(
-      `https://api.legiscan.com/?key=${legiscanKey}&op=getSearch&state=HI&query=UHERO&query=economic%20research%20organization&query=task%20force`
+      `https://api.legiscan.com/?key=${legiscanKey}&op=getSearch&state=HI&query=UHERO%20OR%20task%20force%20OR%20%20economic%20research%20organization%20OR%working%group`
     );
     const results = await data.json();
     const bill = await results.searchresult;
