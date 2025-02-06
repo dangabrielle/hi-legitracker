@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ const BillResults = ({ results }) => {
     setBillArrangement(billsByBillNum);
   };
 
-  const handleQuery = (e: any) => {
+  const handleQuery = (e) => {
     const filteredBills = Object.values(results).filter((bill) =>
       bill?.title?.toLowerCase().includes(e.target.value.toLowerCase())
     );
