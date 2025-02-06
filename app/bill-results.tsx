@@ -8,7 +8,7 @@ import Image from "next/image";
 
 const BillResults = ({ results }) => {
   const [billArrangement, setBillArrangement] = useState(results);
-  const [query, setQuery] = useState("");
+
   const sortbydate = (results) => {
     const testing = Object.values(results).sort(
       (a, b) => new Date(b.last_action_date) - new Date(a.last_action_date)
