@@ -1,5 +1,8 @@
 const legiscanKey = process.env.LEGISCAN_KEY;
+import { Suspense } from "react";
 import BillResults from "./bill-results";
+
+import SkeletonCard from "@/components/skeleton-card";
 // type BillType = {
 //   relevance: number;
 //   state: string;
@@ -36,7 +39,7 @@ import BillResults from "./bill-results";
 async function getData() {
   try {
     const data = await fetch(
-      `https://api.legiscan.com/?key=${legiscanKey}&op=getSearch&state=HI&query=UHERO&quer=economic%20research%20organization&query=task%20force`
+      `https://api.legiscan.com/?key=${legiscanKey}&op=getSearch&state=HI&query=UHERO&query=economic%20research%20organization&query=task%20force`
     );
     const results = await data.json();
     const bill = await results.searchresult;
@@ -52,7 +55,10 @@ export default async function Home() {
 
   return (
     <>
-      <BillResults results={results} />
+      {/*TO-DO: FIX SUSPENSE CARD SIZING*/}
+      <Suspense fallback={<SkeletonCard />}>
+        <BillResults results={results} />
+      </Suspense>
     </>
   );
 }
