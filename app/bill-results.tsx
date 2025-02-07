@@ -65,7 +65,7 @@ const BillResults = ({ results }: { results: BillQuery }) => {
     setBillArrangement(revert);
   };
 
-  const handleQuery = (e) => {
+  const handleQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
     const filteredBills = Object.values(results).filter((bill) =>
       bill?.title?.toLowerCase().includes(e.target.value.toLowerCase())
     );
