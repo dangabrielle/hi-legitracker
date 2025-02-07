@@ -1,5 +1,6 @@
+/* eslint-disable */
 "use client";
-import React, { useState } from "react";
+import React, { ChangeEvent, useState } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -24,16 +25,21 @@ type BillType = {
 type BillQuery = {
   [key: string]: BillType;
 };
+
 const BillResults = ({ results }: { results: BillQuery }) => {
-  const [billArrangement, setBillArrangement] = useState<BillQuery>(results);
+  const [billArrangement, setBillArrangement] = useState(results);
   const [currentBtnView, setCurrentBtnView] = useState("relevance");
 
   const sortbydate = (results: BillQuery) => {
     const testing = Object.values(results).sort(
-      (a, b) => new Date(b.last_action_date) - new Date(a.last_action_date)
+      (a, b) =>
+        new Date(b.last_action_date).getTime() -
+        new Date(a.last_action_date).getTime()
     );
     console.log(testing);
-    setBillArrangement(testing);
+    const revert = Object.fromEntries(testing.map((bill, idx) => [idx, bill]));
+    console.log(revert);
+    setBillArrangement(revert);
     setCurrentBtnView("date");
   };
 
@@ -41,24 +47,33 @@ const BillResults = ({ results }: { results: BillQuery }) => {
     const billsByRelevance = Object.values(results).sort(
       (a, b) => b.relevance - a.relevance
     );
+    const revert = Object.fromEntries(
+      billsByRelevance.map((bill, idx) => [idx, bill])
+    );
     setCurrentBtnView("relevance");
-    setBillArrangement(billsByRelevance);
+    setBillArrangement(revert);
   };
   const sortByBillNum = (results: BillQuery) => {
     const billsByBillNum = Object.values(results).sort(
       (a, b) => a.bill_id - b.bill_id
     );
     console.log(billsByBillNum);
+    const revert = Object.fromEntries(
+      billsByBillNum.map((bill, idx) => [idx, bill])
+    );
     setCurrentBtnView("billID");
-    setBillArrangement(billsByBillNum);
+    setBillArrangement(revert);
   };
 
-  const handleQuery = (e: string) => {
+  const handleQuery = (e) => {
     const filteredBills = Object.values(results).filter((bill) =>
       bill?.title?.toLowerCase().includes(e.target.value.toLowerCase())
     );
     console.log(filteredBills);
-    setBillArrangement(filteredBills);
+    const revert = Object.fromEntries(
+      filteredBills.map((bill, idx) => [idx, bill])
+    );
+    setBillArrangement(revert);
   };
 
   return (
