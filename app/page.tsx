@@ -4,28 +4,28 @@ import BillResults from "./bill-results";
 
 import SkeletonCard from "@/components/skeleton-card";
 
-// const bill = {
-//   "28": {
-//     last_action_date: "2025-01-30",
-//     title: "Bill 28",
-//   },
-//   "29": {
-//     last_action_date: "2025-02-01",
-//     title: "Bill 29",
-//   },
-//   "30": {
-//     last_action_date: "2025-01-28",
-//     title: "Bill 30",
-//   },
-// };
+import { neon } from "@neondatabase/serverless";
 
 async function getData() {
+  const sql = neon(`${process.env.DATABASE_URL}`);
+  const response = await sql`SELECT * FROM playing_with_neon`;
+  console.log(response);
+  return response;
+}
+
+async function getBillsFromLegiscan() {
   try {
+    // called every 24 hrs
     const data = await fetch(
-      `https://api.legiscan.com/?key=${legiscanKey}&op=getSearch&state=HI&query=UHERO%20OR%20task%20force%20OR%20%20economic%20research%20organization%20OR%working%group`
+      `https://api.legiscan.com/?key=${legiscanKey}&op=getSearch&state=HI&query=UHERO%20OR%20task%20force%20OR%20%20economic%20research%20organization%20OR%working%group`,
+      { next: { revalidate: 86400 } }
     );
+
     const results = await data.json();
     const bill = await results.searchresult;
+
+    /* TO-DO Map through the each object and check if it exists (based on bill_id). if not, add it to the db. If the hash changed, update the information */
+
     // console.log(bill);
     return bill;
   } catch (error) {
@@ -34,8 +34,9 @@ async function getData() {
 }
 
 export default async function Home() {
-  const results = await getData();
-
+  const results = await getBillsFromLegiscan();
+  // const billsFromDB = await getBillsFromDB();
+  const neon = await getData();
   return (
     <>
       {/*TO-DO: FIX SUSPENSE CARD SIZING*/}
