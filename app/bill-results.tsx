@@ -26,7 +26,7 @@ type BillType = {
 //   [key: string]: BillType;
 // };
 
-const BillResults = ({ results }: { results: BillType[] }) => {
+const BillResults = ({ results }: any) => {
   const [billArrangement, setBillArrangement] = useState(results);
   const [currentBtnView, setCurrentBtnView] = useState("relevance");
 
@@ -58,7 +58,7 @@ const BillResults = ({ results }: { results: BillType[] }) => {
   };
 
   const handleQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const filteredBills = results.filter((bill) =>
+    const filteredBills = results.filter((bill: BillType) =>
       bill?.title?.toLowerCase().includes(e.target.value.toLowerCase())
     );
 
@@ -121,7 +121,7 @@ const BillResults = ({ results }: { results: BillType[] }) => {
       </div>
       {/* <h1>results: {Object.keys(bill).length - 1}</h1> */}
       <main className="h-fit w-full pb-10 flex flex-col lg:grid lg:grid-cols-3  ">
-        {billArrangement.map((val, idx) => (
+        {billArrangement.map((val: any, idx: any) => (
           <div
             key={idx}
             className="hover:scale-105 transition-transform ease-in-out delay-100 bg-slate-100 text-xs md:text-sm gap-y-3 rounded-lg items-start justify-start text-left p-5 flex flex-col m-3 "

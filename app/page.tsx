@@ -77,10 +77,10 @@ async function getBillsFromLegiscan() {
     const results = await data.json();
     const bills = await results.searchresult;
 
-    const billsArray = Object.values(bills);
+    const billsArray: BillType[] = Object.values(bills);
     billsArray.pop();
     for (const bill of billsArray) {
-      const billStatus = await checkIfExists(bill.bill_number);
+      const billStatus = await checkIfExists(Number(bill.bill_number));
       if (!billStatus) {
         await createBillEntry(bill);
       }
