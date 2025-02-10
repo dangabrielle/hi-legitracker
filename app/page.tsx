@@ -19,14 +19,11 @@ type BillType = {
   last_action: string;
   title: string;
 };
-
 async function getData() {
   const sql = neon(`${process.env.DATABASE_URL}`);
   try {
     const response = await sql`SELECT * FROM bills`;
-    // for (const bill of response) {
-    //   console.log(bill);
-    // }
+
     return response;
   } catch (error) {
     console.error("Error fetching bills from db", error);
@@ -34,7 +31,7 @@ async function getData() {
   }
 }
 
-async function checkIfExists(bill_number: number) {
+async function checkIfExists(bill_number: string) {
   const sql = neon(`${process.env.DATABASE_URL}`);
   try {
     const storedBill =
@@ -80,7 +77,7 @@ async function getBillsFromLegiscan() {
     const billsArray: BillType[] = Object.values(bills);
     billsArray.pop();
     for (const bill of billsArray) {
-      const billStatus = await checkIfExists(Number(bill.bill_number));
+      const billStatus = await checkIfExists(bill.bill_number);
       if (!billStatus) {
         await createBillEntry(bill);
       }
@@ -98,9 +95,10 @@ async function getBillsFromLegiscan() {
 }
 
 export default async function Home() {
-  await getBillsFromLegiscan();
+  const checkNewBills = await getBillsFromLegiscan();
   const currentBills = await getData();
-  console.log(currentBills);
+  console.log("current bills " + typeof currentBills);
+  // const billsFromDB = await getBillsFromDB();
 
   return (
     <>
