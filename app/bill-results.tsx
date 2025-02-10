@@ -22,58 +22,47 @@ type BillType = {
   title: string;
 };
 
-type BillQuery = {
-  [key: string]: BillType;
-};
+// type BillQuery = {
+//   [key: string]: BillType;
+// };
 
-const BillResults = ({ results }: { results: BillQuery }) => {
+const BillResults = ({ results }: { results: BillType[] }) => {
   const [billArrangement, setBillArrangement] = useState(results);
   const [currentBtnView, setCurrentBtnView] = useState("relevance");
 
-  const sortbydate = (results: BillQuery) => {
-    const testing = Object.values(results).sort(
+  const sortbydate = (results: BillType[]) => {
+    const billsByLatest = results.sort(
       (a, b) =>
         new Date(b.last_action_date).getTime() -
         new Date(a.last_action_date).getTime()
     );
-    console.log(testing);
-    const revert = Object.fromEntries(testing.map((bill, idx) => [idx, bill]));
-    console.log(revert);
-    setBillArrangement(revert);
+
+    setBillArrangement(billsByLatest);
     setCurrentBtnView("date");
   };
 
-  const sortByRelevance = (results: BillQuery) => {
-    const billsByRelevance = Object.values(results).sort(
-      (a, b) => b.relevance - a.relevance
-    );
-    const revert = Object.fromEntries(
-      billsByRelevance.map((bill, idx) => [idx, bill])
-    );
+  const sortByRelevance = (results: BillType[]) => {
+    const billsByRelevance = results.sort((a, b) => b.relevance - a.relevance);
+
     setCurrentBtnView("relevance");
-    setBillArrangement(revert);
+    setBillArrangement(billsByRelevance);
   };
-  const sortByBillNum = (results: BillQuery) => {
-    const billsByBillNum = Object.values(results).sort(
-      (a, b) => a.bill_id - b.bill_id
-    );
+  const sortByBillNum = (results: BillType[]) => {
+    const billsByBillNum = results.sort((a, b) => a.bill_id - b.bill_id);
     console.log(billsByBillNum);
-    const revert = Object.fromEntries(
-      billsByBillNum.map((bill, idx) => [idx, bill])
-    );
+    // const revert = Object.fromEntries(
+    //   billsByBillNum.map((bill, idx) => [idx, bill])
+    // );
     setCurrentBtnView("billID");
-    setBillArrangement(revert);
+    setBillArrangement(billsByBillNum);
   };
 
   const handleQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const filteredBills = Object.values(results).filter((bill) =>
+    const filteredBills = results.filter((bill) =>
       bill?.title?.toLowerCase().includes(e.target.value.toLowerCase())
     );
-    console.log(filteredBills);
-    const revert = Object.fromEntries(
-      filteredBills.map((bill, idx) => [idx, bill])
-    );
-    setBillArrangement(revert);
+
+    setBillArrangement(filteredBills);
   };
 
   return (
@@ -121,7 +110,7 @@ const BillResults = ({ results }: { results: BillQuery }) => {
         </div>
         <div className="w-full max-w-xl md:w-1/2 px-10 pt-5">
           <Label className="pl-1 text-gray-500 font-semibold" htmlFor="search">
-            Search current bills:
+            Search by title:
           </Label>
           <Input
             type="search"
@@ -132,62 +121,57 @@ const BillResults = ({ results }: { results: BillQuery }) => {
       </div>
       {/* <h1>results: {Object.keys(bill).length - 1}</h1> */}
       <main className="h-fit w-full pb-10 flex flex-col lg:grid lg:grid-cols-3  ">
-        {Object.entries(billArrangement).map(
-          ([key, val]) =>
-            Number(key) < 50 && (
-              <div
-                key={key}
-                className="hover:scale-105 transition-transform ease-in-out delay-100 bg-slate-100 text-xs md:text-sm gap-y-3 rounded-lg items-start justify-start text-left p-5 flex flex-col m-3 "
-              >
-                <div className="flex w-full space-x-5 justify-between">
-                  <h1 className="font-bold">{val.title}</h1>
-                  <div className="right-0 top-0 flex gap-x-1">
-                    <Button variant="outline">
-                      <Link
-                        href={`${val.text_url}`}
-                        className="font-bold text-xs text-cyan-900 rounded-lg"
-                        target="_blank"
-                      >
-                        View bill
-                      </Link>
-                    </Button>
-                    <Button variant="outline">
-                      <Link
-                        className="font-bold text-xs text-cyan-900  rounded-lg"
-                        href={`${val.research_url}`}
-                        target="_blank"
-                      >
-                        Info
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-                <p>
-                  <span className="font-bold text-gray-500">Relevance: </span>
-                  {val.relevance}
-                </p>
-                <p>
-                  <span className="font-bold text-gray-500">
-                    Last action date:
-                  </span>{" "}
-                  {val.last_action_date}
-                </p>
-                <p>
-                  <span className="font-bold text-gray-500">Bill Number: </span>
-                  {val.bill_number}
-                </p>
-                <p>
-                  <span className="font-bold text-gray-500">Bill ID: </span>{" "}
-                  {val.bill_id}
-                </p>
-
-                <p>
-                  <span className="font-bold text-gray-500">Last action:</span>{" "}
-                  {val.last_action}
-                </p>
+        {billArrangement.map((val, idx) => (
+          <div
+            key={idx}
+            className="hover:scale-105 transition-transform ease-in-out delay-100 bg-slate-100 text-xs md:text-sm gap-y-3 rounded-lg items-start justify-start text-left p-5 flex flex-col m-3 "
+          >
+            <div className="flex w-full space-x-5 justify-between">
+              <h1 className="font-bold">{val.title}</h1>
+              <div className="right-0 top-0 flex gap-x-1">
+                <Button variant="outline">
+                  <Link
+                    href={`${val.text_url}`}
+                    className="font-bold text-xs text-cyan-900 rounded-lg"
+                    target="_blank"
+                  >
+                    View bill
+                  </Link>
+                </Button>
+                <Button variant="outline">
+                  <Link
+                    className="font-bold text-xs text-cyan-900  rounded-lg"
+                    href={`${val.research_url}`}
+                    target="_blank"
+                  >
+                    Info
+                  </Link>
+                </Button>
               </div>
-            )
-        )}
+            </div>
+            <p>
+              <span className="font-bold text-gray-500">Relevance: </span>
+              {val.relevance}
+            </p>
+            <p>
+              <span className="font-bold text-gray-500">Last action date:</span>{" "}
+              {val.last_action_date.toLocaleString()}
+            </p>
+            <p>
+              <span className="font-bold text-gray-500">Bill Number: </span>
+              {val.bill_number}
+            </p>
+            <p>
+              <span className="font-bold text-gray-500">Bill ID: </span>{" "}
+              {val.bill_id}
+            </p>
+
+            <p>
+              <span className="font-bold text-gray-500">Last action:</span>{" "}
+              {val.last_action}
+            </p>
+          </div>
+        ))}
       </main>
     </div>
   );
