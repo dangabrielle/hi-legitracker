@@ -6,11 +6,64 @@ import SkeletonCard from "@/components/skeleton-card";
 
 import { neon } from "@neondatabase/serverless";
 
+type BillType = {
+  relevance: number;
+  state: string;
+  bill_number: string;
+  bill_id: number;
+  change_hash: string;
+  url: string;
+  text_url: string;
+  research_url: string;
+  last_action_date: string;
+  last_action: string;
+  title: string;
+};
+
 async function getData() {
   const sql = neon(`${process.env.DATABASE_URL}`);
-  const response = await sql`SELECT * FROM playing_with_neon`;
-  console.log(response);
-  return response;
+  try {
+    const response = await sql`SELECT * FROM bills`;
+    // for (const bill of response) {
+    //   console.log(bill);
+    // }
+    return response;
+  } catch (error) {
+    console.error("Error fetching bills from db", error);
+    return [];
+  }
+}
+
+async function checkIfExists(bill_number: number) {
+  const sql = neon(`${process.env.DATABASE_URL}`);
+  try {
+    const storedBill =
+      await sql`SELECT EXISTS (SELECT 1 FROM bills WHERE bill_number = ${bill_number}) AS exists;`;
+    console.log(storedBill[0].exists);
+    return storedBill[0].exists;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function createBillEntry(bill: BillType) {
+  const sql = neon(`${process.env.DATABASE_URL}`);
+  const {
+    bill_id,
+    bill_number,
+    change_hash,
+    last_action,
+    last_action_date,
+    relevance,
+    research_url,
+    state,
+    text_url,
+    title,
+    url,
+  } = bill;
+
+  await sql`INSERT INTO bills (bill_id, bill_number, change_hash, last_action, last_action_date, relevance, research_url, state, text_url, title, url) VALUES (${bill_id}, ${bill_number}, ${change_hash}, ${last_action}, ${last_action_date}, ${relevance}, ${research_url}, ${state},  ${text_url}, ${title}, ${url})
+`;
 }
 
 async function getBillsFromLegiscan() {
@@ -22,26 +75,38 @@ async function getBillsFromLegiscan() {
     );
 
     const results = await data.json();
-    const bill = await results.searchresult;
+    const bills = await results.searchresult;
+
+    const billsArray = Object.values(bills);
+    billsArray.pop();
+    for (const bill of billsArray) {
+      const billStatus = await checkIfExists(bill.bill_number);
+      if (!billStatus) {
+        await createBillEntry(bill);
+      }
+    }
+    // console.log(billsArray);
+    // console.log(bills);
 
     /* TO-DO Map through the each object and check if it exists (based on bill_id). if not, add it to the db. If the hash changed, update the information */
 
     // console.log(bill);
-    return bill;
+    return billsArray;
   } catch (error) {
     console.log(error);
   }
 }
 
 export default async function Home() {
-  const results = await getBillsFromLegiscan();
-  // const billsFromDB = await getBillsFromDB();
-  const neon = await getData();
+  await getBillsFromLegiscan();
+  const currentBills = await getData();
+  console.log(currentBills);
+
   return (
     <>
       {/*TO-DO: FIX SUSPENSE CARD SIZING*/}
       <Suspense fallback={<SkeletonCard />}>
-        <BillResults results={results} />
+        <BillResults results={currentBills} />
       </Suspense>
     </>
   );
