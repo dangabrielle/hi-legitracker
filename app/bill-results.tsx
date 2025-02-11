@@ -28,7 +28,7 @@ type BillType = {
 
 const BillResults = ({ results }: any) => {
   const [billArrangement, setBillArrangement] = useState(results);
-  const [currentBtnView, setCurrentBtnView] = useState("relevance");
+  const [currentBtnView, setCurrentBtnView] = useState("");
 
   const sortbydate = (results: BillType[]) => {
     const billsByLatest = results.sort(
