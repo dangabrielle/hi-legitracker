@@ -50,7 +50,12 @@ const BillResults = ({
 }) => {
   const [billArrangement, setBillArrangement] = useState(results);
   const [currentBtnView, setCurrentBtnView] = useState("");
-
+  const [searchTerms, setSearchTerms] = useState([
+    "UHERO",
+    "economic research organization",
+    "task force",
+    "working group",
+  ]);
   // useEffect(() => {
   //   const billChanges = updatedBills.map((bill, idx) => {
   //     Object.keys(bill).forEach((val) => {
@@ -79,6 +84,7 @@ const BillResults = ({
     setCurrentBtnView("relevance");
     setBillArrangement(billsByRelevance);
   };
+
   const sortByBillNum = (results: BillType[]) => {
     const billsByBillNum = results.sort((a, b) => a.bill_id - b.bill_id);
 
@@ -99,8 +105,18 @@ const BillResults = ({
     setBillArrangement(filteredBills);
   };
 
+  const handleSearch = (term: string) => {
+    if (searchTerms.length == 1) return;
+    console.log(term);
+    const newTerms = searchTerms.filter((originalTerm) => {
+      return term !== originalTerm;
+    });
+    console.log(newTerms);
+    setSearchTerms(newTerms);
+  };
+
   return (
-    <div className="min-h-screen w-screen mt-5 flex flex-col items-center justify-center md:m-10">
+    <div className="min-h-screen  mt-5 flex flex-col items-center justify-center md:m-10">
       <header className="gap-y-5 flex flex-col items-center justify-center">
         <Image
           src={"/UHEROLogo-Color_HighRes.png"}
@@ -112,7 +128,7 @@ const BillResults = ({
           Hawaii Legislation Bill Tracker
         </h1>
       </header>
-      <div className="z-10 md:pt-7 md:pb-5 w-screen text-xs from-white via-white to-white/90  bg-gradient-to-b sticky top-0  flex flex-col items-center justify-center space-x-5">
+      <div className="z-10 pt-4 pb-1  w-screen text-xs from-white via-white to-white/90  bg-gradient-to-b sticky top-0 flex flex-col items-center justify-center space-x-5">
         <div className="grid grid-cols-[1fr,2fr,1fr] md:grid-cols-3 p-5 h-fit w-screen md:w-fit justify-center gap-x-3 ">
           <Button
             className={cn(
@@ -160,33 +176,63 @@ const BillResults = ({
           />
         </div>
       </div>
-      <div className="w-3/4 max-w-md flex flex-col px-3 py-1 mt-5 md:mt-0 rounded-lg bg-slate-100">
+      <div className="w-full items-center justify-center flex flex-col gap-y-2 px-3 py-1 mt-5">
+        <p className="font-bold text-gray-500 text-xs md:text-sm">
+          Currently searched terms:
+        </p>
+        <div className="md:flex-row md:flex grid grid-cols-[1fr,auto] gap-y-2 md:gap-y-0 gap-x-3">
+          {searchTerms.map((term, idx) => (
+            <div
+              className="px-2 text-gray-600 text-xs py-1 w-fit bg-slate-100 rounded-lg flex items-center"
+              key={idx}
+            >
+              <button
+                onClick={() => handleSearch(term)}
+                className="pr-2 text-xs left-0 font-semibold text-gray-600 py-0 hover:scale-105"
+              >
+                x
+              </button>
+              {term}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="w-fit min-w-60 md:min-w-96 max-w-xl flex flex-col px-3 py-1 mt-5  rounded-lg bg-slate-100">
         <h1 className="text-gray-500 text-xs md:text-sm left-0">
           <span className="font-semibold">Results: </span>
           {results.length}
         </h1>
-        <h1 className="text-gray-500 text-xs md:text-sm left-0">
+        <div className="text-gray-500 text-xs md:text-sm left-0 w-full inline-flex items-center gap-x-1">
           <span className="font-semibold">New Bills: </span>
-          {newBills.length > 0
-            ? newBills.map((val) => (
-                <Link key={val[0]} href={`${val[1]}`}>
-                  {val[0]}
+          <div className="inline-flex gap-x-1">
+            {newBills.length > 0
+              ? newBills.map((newBill) => (
+                  <Link
+                    className="hover:bg-white px-1 py-0 text-xs md:text-sm rounded-md"
+                    key={newBill[0]}
+                    href={`${newBill[1]}`}
+                  >
+                    {newBill[0]}{" "}
+                  </Link>
+                ))
+              : "N/A"}
+          </div>
+        </div>
+        <div className="text-gray-500 text-xs md:text-sm left-0 w-full inline-flex items-center gap-x-1">
+          <span className="font-semibold">Updated Bills: </span>
+
+          {updatedBills.length > 0
+            ? updatedBills.map((updatedBill) => (
+                <Link
+                  className="hover:bg-white px-1 py-0 text-xs md:text-sm rounded-md"
+                  key={updatedBill.bill_id}
+                  href={`${updatedBill.url}`}
+                >
+                  {updatedBill.bill_number}{" "}
                 </Link>
               ))
             : "N/A"}
-        </h1>
-        <h1 className="text-gray-500 text-xs md:text-sm left-0">
-          <span className="font-semibold">Updated Bills: </span>
-          {updatedBills.length > 0
-            ? updatedBills.map((val, idx) => (
-                <>
-                  <Link key={idx} href={`${val.url}`}>
-                    {val.bill_number}
-                  </Link>
-                </>
-              ))
-            : "N/A"}
-        </h1>
+        </div>
       </div>
       <main className="relative p-5 w-full md:max-w-screen-lg pb-10 flex flex-col items-start md:items-stretch md:grid md:grid-cols-2 md:gap-x-5">
         {billArrangement.map((val: BillType, idx: number) => (
@@ -238,10 +284,10 @@ const BillResults = ({
               <span className="font-bold text-gray-500">Last action:</span>{" "}
               {val.last_action}
             </p>
-            <p>
+            {/* <p>
               <span className="font-bold text-gray-500">Last saved:</span>{" "}
               {val.created_at.toLocaleString()}
-            </p>
+            </p> */}
           </div>
         ))}
       </main>
