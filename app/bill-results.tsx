@@ -8,6 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
 type BillType = {
   relevance: number;
   state: string;
@@ -21,6 +31,7 @@ type BillType = {
   last_action: string;
   title: string;
   created_at: Date;
+  last_updated?: Date;
 };
 
 type UpdatedBillFields = {
@@ -40,15 +51,17 @@ type UpdatedBillFields = {
 type NewBill = [bill_number: string, url: string];
 
 const BillResults = ({
+  totalPages,
   results,
   newBills,
   updatedBills,
 }: {
+  totalPages: number;
   results: BillType[];
   newBills: NewBill[];
   updatedBills: UpdatedBillFields[];
 }) => {
-  const [billArrangement, setBillArrangement] = useState(results);
+  const [billArrangement, setBillArrangement] = useState<BillType[]>([]);
   const [currentBtnView, setCurrentBtnView] = useState("");
   const [searchTerms, setSearchTerms] = useState([
     "UHERO",
@@ -56,6 +69,9 @@ const BillResults = ({
     "task force",
     "working group",
   ]);
+
+  const [page, setPage] = useState(1);
+
   // useEffect(() => {
   //   const billChanges = updatedBills.map((bill, idx) => {
   //     Object.keys(bill).forEach((val) => {
@@ -66,6 +82,12 @@ const BillResults = ({
   //   });
   //   console.log("bill changes " + billChanges);
   // }, []);
+
+  useEffect(() => {
+    const startIdx = (page - 1) * 25;
+    const currentBills = results.slice(startIdx, startIdx + 25);
+    setBillArrangement(currentBills);
+  }, [page]);
 
   const sortbydate = (results: BillType[]) => {
     const billsByLatest = results.sort(
@@ -197,29 +219,34 @@ const BillResults = ({
           ))}
         </div>
       </div>
-      <div className="w-fit min-w-60 md:min-w-96 max-w-xl flex flex-col px-3 py-1 mt-5  rounded-lg bg-slate-100">
+      <div className="w-fit max-w-md md:min-w-96 md:max-w-xl flex flex-col p-3 mt-5 gap-y-1  rounded-lg bg-slate-100">
         <h1 className="text-gray-500 text-xs md:text-sm left-0">
           <span className="font-semibold">Results: </span>
           {results.length}
         </h1>
-        <div className="text-gray-500 text-xs md:text-sm left-0 w-full inline-flex items-center gap-x-1">
-          <span className="font-semibold">New Bills: </span>
-          <div className="inline-flex gap-x-1">
-            {newBills.length > 0
-              ? newBills.map((newBill) => (
-                  <Link
-                    className="hover:bg-white px-1 py-0 text-xs md:text-sm rounded-md"
-                    key={newBill[0]}
-                    href={`${newBill[1]}`}
-                  >
-                    {newBill[0]}{" "}
-                  </Link>
-                ))
-              : "N/A"}
-          </div>
+        <div className="text-gray-500 text-xs md:text-sm left-0 w-full flex flex-wrap items-center gap-x-1">
+          <span className="font-semibold">
+            New Bills {newBills.length > 0 ? `(${newBills.length}) ` : ""}
+          </span>
+
+          {newBills.length > 0
+            ? newBills.map((newBill) => (
+                <Link
+                  className=" hover:font-bold mx-1 text-xs md:text-sm rounded-md"
+                  key={newBill[0]}
+                  href={`${newBill[1]}`}
+                  target="_blank"
+                >
+                  {newBill[0]}{" "}
+                </Link>
+              ))
+            : "N/A"}
         </div>
-        <div className="text-gray-500 text-xs md:text-sm left-0 w-full inline-flex items-center gap-x-1">
-          <span className="font-semibold">Updated Bills: </span>
+        <div className="text-gray-500 text-xs md:text-sm left-0 w-full flex flex-wrap items-center gap-x-1">
+          <span className="font-semibold">
+            Updated Bills{" "}
+            {updatedBills.length > 0 ? ` (${updatedBills.length}) ` : ""}
+          </span>
 
           {updatedBills.length > 0
             ? updatedBills.map((updatedBill) => (
@@ -227,8 +254,9 @@ const BillResults = ({
                   className="hover:bg-white px-1 py-0 text-xs md:text-sm rounded-md"
                   key={updatedBill.bill_id}
                   href={`${updatedBill.url}`}
+                  target="_blank"
                 >
-                  {updatedBill.bill_number}{" "}
+                  {updatedBill.bill_number}
                 </Link>
               ))
             : "N/A"}
@@ -284,13 +312,59 @@ const BillResults = ({
               <span className="font-bold text-gray-500">Last action:</span>{" "}
               {val.last_action}
             </p>
-            {/* <p>
-              <span className="font-bold text-gray-500">Last saved:</span>{" "}
-              {val.created_at.toLocaleString()}
-            </p> */}
+            <p>
+              <span className="font-bold text-gray-500">Created at:</span>{" "}
+              {val.created_at.toLocaleString("en-US", {
+                timeZone: "Pacific/Honolulu",
+              })}
+            </p>
+            <p>
+              <span className="font-bold text-gray-500">Last updated:</span>{" "}
+              {val.last_updated
+                ? val.last_updated.toLocaleString("en-US", {})
+                : val.created_at.toLocaleString("en-US", {})}
+            </p>
           </div>
         ))}
       </main>
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              className={cn(
+                page === 1
+                  ? "pointer-events-none opacity-50"
+                  : "pointer-events-auto opacity-100"
+              )}
+              onClick={() => {
+                setPage((prev) => Math.max(prev - 1, 1));
+                console.log("clicked");
+              }}
+            />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink onClick={() => setPage(1)}>1</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationEllipsis />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink onClick={() => setPage(totalPages)}>
+              {totalPages}
+            </PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext
+              className={cn(
+                page === totalPages
+                  ? "pointer-events-none opacity-50"
+                  : "pointer-events-auto opacity-100"
+              )}
+              onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };

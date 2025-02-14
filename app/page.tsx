@@ -18,6 +18,7 @@ type BillType = {
   last_action: string;
   title: string;
   created_at: Date;
+  last_updated?: Date;
 };
 
 type UpdatedBillFields = {
@@ -32,6 +33,7 @@ type UpdatedBillFields = {
   last_action_date?: string;
   last_action?: string;
   title?: string;
+  updatedDate: Date;
 };
 
 type NewBill = [bill_number: string, url: string];
@@ -41,8 +43,12 @@ const sql = neon(`${process.env.DATABASE_URL}`);
 
 async function getData() {
   try {
-    const response = await sql`SELECT * FROM bills`;
-    return response as BillType[];
+    const billCount = await sql`SELECT COUNT(*) FROM bills`;
+    const totalPages = Math.ceil(billCount[0].count / 25);
+    console.log(totalPages);
+    console.log(billCount[0].count);
+    const dbBills = await sql`SELECT * FROM bills`;
+    return [dbBills, totalPages];
   } catch (error) {
     console.error("Error fetching bills from db", error);
     return [];
@@ -99,9 +105,10 @@ async function handleBill(
               : "",
           last_action: last_action !== dbBill.last_action ? last_action : "",
           title: title !== dbBill.title ? title : "",
+          updatedDate: new Date(),
         });
         // updates bill accordingly
-        await sql`UPDATE bills SET change_hash = ${change_hash}, last_action=${last_action}, last_action_date=${last_action_date}, relevance=${relevance}, research_url=${research_url}, state=${state}, text_url=${text_url}, title=${title}, url=${url} WHERE (bill_number = ${bill_number}) AND bill_id = ${bill_id}`;
+        await sql`UPDATE bills SET change_hash = ${change_hash}, last_action=${last_action}, last_action_date=${last_action_date}, relevance=${relevance}, research_url=${research_url}, state=${state}, text_url=${text_url}, title=${title}, url=${url}, last_updated=now() WHERE (bill_number = ${bill_number}) AND bill_id = ${bill_id}`;
         console.log("hash changed");
       }
     } else {
@@ -151,7 +158,9 @@ export default async function Home() {
     }
   }
 
-  const currentBills = await getData();
+  const results = await getData();
+  const dbBills = results[0] as BillType[];
+  const totalPages = results[1] as number;
   // console.log(currentBills);
   console.log(newBills);
   console.log(updatedBills);
@@ -161,7 +170,8 @@ export default async function Home() {
       {/*TO-DO: FIX SUSPENSE CARD SIZING*/}
       <Suspense fallback={<SkeletonCard />}>
         <BillResults
-          results={currentBills}
+          totalPages={totalPages}
+          results={dbBills}
           newBills={newBills}
           updatedBills={updatedBills}
         />
