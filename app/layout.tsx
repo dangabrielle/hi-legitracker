@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import Image from "next/image";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,7 +27,20 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <div className="min-h-screen  mt-5 flex flex-col items-center md:m-10">
+          <header className="gap-y-5 flex flex-col items-center justify-center">
+            <Image
+              src={"/UHEROLogo-Color_HighRes.png"}
+              height={250}
+              width={250}
+              alt="logo"
+            />
+            <h1 className="md:text-3xl text-xl font-bold">
+              Hawaii Legislation Bill Tracker
+            </h1>
+          </header>
+          {children}
+        </div>
       </body>
     </html>
   );
