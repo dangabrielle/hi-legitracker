@@ -18,6 +18,14 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 type BillType = {
   relevance: number;
   state: string;
@@ -51,43 +59,38 @@ type UpdatedBillFields = {
 type NewBill = [bill_number: string, url: string];
 
 const BillResults = ({
-  totalPages,
   results,
   newBills,
   updatedBills,
 }: {
-  totalPages: number;
   results: BillType[];
   newBills: NewBill[];
   updatedBills: UpdatedBillFields[];
 }) => {
-  const [billArrangement, setBillArrangement] = useState<BillType[]>([]);
-  const [currentBtnView, setCurrentBtnView] = useState("");
-  const [searchTerms, setSearchTerms] = useState([
+  const terms = [
     "UHERO",
     "economic research organization",
     "task force",
     "working group",
-  ]);
+  ];
+  const [billArrangement, setBillArrangement] = useState<BillType[]>(results);
+  const [currentBtnView, setCurrentBtnView] = useState("");
+  const [searchTerms, setSearchTerms] = useState(terms);
+  const [isMinus, setIsMinus] = useState<{ [key: string]: boolean }>({});
 
   const [page, setPage] = useState(1);
-
-  // useEffect(() => {
-  //   const billChanges = updatedBills.map((bill, idx) => {
-  //     Object.keys(bill).forEach((val) => {
-  //       if (bill[val] === "") {
-  //         delete bill[val];
-  //       }
-  //     });
-  //   });
-  //   console.log("bill changes " + billChanges);
-  // }, []);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
+  const [totalPages, setTotalPages] = useState(
+    Math.ceil(results.length / itemsPerPage)
+  );
 
   useEffect(() => {
-    const startIdx = (page - 1) * 25;
-    const currentBills = results.slice(startIdx, startIdx + 25);
+    setTotalPages(Math.ceil(results.length / itemsPerPage));
+    const startIdx = (page - 1) * itemsPerPage;
+    const currentBills = results.slice(startIdx, startIdx + itemsPerPage);
     setBillArrangement(currentBills);
-  }, [page]);
+    window.scrollTo({ top: 0 });
+  }, [page, currentBtnView, itemsPerPage]);
 
   const sortbydate = (results: BillType[]) => {
     const billsByLatest = results.sort(
@@ -98,6 +101,7 @@ const BillResults = ({
     window.scrollTo({ top: 0 });
     setBillArrangement(billsByLatest);
     setCurrentBtnView("date");
+    setPage(1);
   };
 
   const sortByRelevance = (results: BillType[]) => {
@@ -105,6 +109,7 @@ const BillResults = ({
     window.scrollTo({ top: 0 });
     setCurrentBtnView("relevance");
     setBillArrangement(billsByRelevance);
+    setPage(1);
   };
 
   const sortByBillNum = (results: BillType[]) => {
@@ -113,6 +118,7 @@ const BillResults = ({
     window.scrollTo({ top: 0 });
     setCurrentBtnView("billID");
     setBillArrangement(billsByBillNum);
+    setPage(1);
   };
 
   const handleQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,31 +131,26 @@ const BillResults = ({
     });
     window.scrollTo({ top: 0 });
     setBillArrangement(filteredBills);
+    setPage(1);
   };
 
   const handleSearch = (term: string) => {
-    if (searchTerms.length == 1) return;
+    // if (searchTerms.length == 1) return;
     console.log(term);
-    const newTerms = searchTerms.filter((originalTerm) => {
-      return term !== originalTerm;
-    });
-    console.log(newTerms);
-    setSearchTerms(newTerms);
+    if (searchTerms.includes(term)) {
+      const newTerms = searchTerms.filter((originalTerm) => {
+        return term !== originalTerm;
+      });
+      console.log(newTerms);
+      setSearchTerms(newTerms);
+    } else {
+      searchTerms.push(term);
+      console.log(searchTerms);
+    }
   };
 
   return (
-    <div className="min-h-screen  mt-5 flex flex-col items-center justify-center md:m-10">
-      <header className="gap-y-5 flex flex-col items-center justify-center">
-        <Image
-          src={"/UHEROLogo-Color_HighRes.png"}
-          height={250}
-          width={250}
-          alt="logo"
-        />
-        <h1 className="md:text-3xl text-xl font-bold">
-          Hawaii Legislation Bill Tracker
-        </h1>
-      </header>
+    <div className="flex flex-col items-center justify-center ">
       <div className="z-10 pt-4 pb-1  w-screen text-xs from-white via-white to-white/90  bg-gradient-to-b sticky top-0 flex flex-col items-center justify-center space-x-5">
         <div className="grid grid-cols-[1fr,2fr,1fr] md:grid-cols-3 p-5 h-fit w-screen md:w-fit justify-center gap-x-3 ">
           <Button
@@ -200,26 +201,37 @@ const BillResults = ({
       </div>
       <div className="w-full items-center justify-center flex flex-col gap-y-2 px-3 py-1 mt-5">
         <p className="font-bold text-gray-500 text-xs md:text-sm">
-          Currently searched terms:
+          Current search terms:
         </p>
         <div className="md:flex-row md:flex grid grid-cols-[1fr,auto] gap-y-2 md:gap-y-0 gap-x-3">
-          {searchTerms.map((term, idx) => (
+          {terms.map((term, idx) => (
             <div
-              className="px-2 text-gray-600 text-xs py-1 w-fit bg-slate-100 rounded-lg flex items-center"
+              className={cn(
+                isMinus[term]
+                  ? "bg-slate-100/50 text-gray-600/50"
+                  : "opacity-100 bg-slate-100 text-gray-600",
+                "px-2  text-xs py-1 w-fit rounded-lg flex items-center"
+              )}
               key={idx}
             >
               <button
-                onClick={() => handleSearch(term)}
-                className="pr-2 text-xs left-0 font-semibold text-gray-600 py-0 hover:scale-105"
+                onClick={() => {
+                  handleSearch(term);
+                  setIsMinus((prev) => ({ ...prev, [term]: !prev[term] }));
+                }}
+                className={cn(
+                  isMinus[term] ? "font-normal" : "font-semibold",
+                  "pr-2 text-xs left-0  text-gray-500 py-0 hover:scale-105"
+                )}
               >
-                x
+                {isMinus[term] ? "+" : "x"}
               </button>
               {term}
             </div>
           ))}
         </div>
       </div>
-      <div className="w-fit max-w-md md:min-w-96 md:max-w-xl flex flex-col p-3 mt-5 gap-y-1  rounded-lg bg-slate-100">
+      <div className="w-fit max-w-md min-w-60 md:min-w-96 md:max-w-xl flex flex-col p-3 mt-5 gap-y-1  rounded-lg bg-slate-100">
         <h1 className="text-gray-500 text-xs md:text-sm left-0">
           <span className="font-semibold">Results: </span>
           {results.length}
@@ -327,44 +339,94 @@ const BillResults = ({
           </div>
         ))}
       </main>
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
+      <footer className="sticky bg-gradient-to-t from-white to-0% rounded-lg justify-center md:pl-5 bg-white py-2 bottom-0  gap-y-4 items-center w-full md:w-fit flex flex-col md:grid  md:grid-cols-[1fr,2fr] max-w-xl md:gap-x-3">
+        <div className="flex items-center gap-x-3 justify-center shrink">
+          <Label className="text-xs md:text-sm text-gray-600">
+            Bills per page
+          </Label>
+          <Select onValueChange={(e) => setItemsPerPage(Number(e))}>
+            <SelectTrigger className="w-fit px-3 text-xs ">
+              <SelectValue className="" placeholder="24" />
+            </SelectTrigger>
+            <SelectContent className="">
+              <SelectItem className="" value="24">
+                24
+              </SelectItem>
+              <SelectItem value="50">50 </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Pagination className="grow">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                className={cn(
+                  "cursor-pointer text-xs md:text-sm",
+                  page === 1
+                    ? "pointer-events-none opacity-50"
+                    : "pointer-events-auto opacity-100"
+                )}
+                onClick={() => {
+                  setPage((prev) => Math.max(prev - 1, 1));
+                  console.log("clicked");
+                }}
+              />
+            </PaginationItem>
+            <PaginationItem className={cn(page === 1 ? "hidden" : "")}>
+              <PaginationLink
+                className="text-xs md:text-sm"
+                onClick={() => setPage(1)}
+              >
+                1
+              </PaginationLink>
+            </PaginationItem>
+            <PaginationItem
               className={cn(
-                page === 1
-                  ? "pointer-events-none opacity-50"
-                  : "pointer-events-auto opacity-100"
+                "text-xs md:text-sm",
+                page === 1 ? "hidden" : "block"
               )}
-              onClick={() => {
-                setPage((prev) => Math.max(prev - 1, 1));
-                console.log("clicked");
-              }}
-            />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink onClick={() => setPage(1)}>1</PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink onClick={() => setPage(totalPages)}>
-              {totalPages}
-            </PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext
-              className={cn(
-                page === totalPages
-                  ? "pointer-events-none opacity-50"
-                  : "pointer-events-auto opacity-100"
-              )}
-              onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+            >
+              <PaginationEllipsis />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink className="border text-xs md:text-sm">
+                {page}
+              </PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationEllipsis
+                className={cn(
+                  "text-xs md:text-sm",
+                  page === totalPages ? "hidden" : ""
+                )}
+              />
+            </PaginationItem>
+            <PaginationItem
+              className={cn(page === totalPages ? "hidden" : "block")}
+            >
+              <PaginationLink
+                className="text-xs md:text-sm"
+                onClick={() => setPage(totalPages)}
+              >
+                {totalPages}
+              </PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                className={cn(
+                  "cursor-pointer text-xs md:text-sm",
+                  page === totalPages
+                    ? "pointer-events-none opacity-50"
+                    : "pointer-events-auto opacity-100"
+                )}
+                onClick={() =>
+                  setPage((prev) => Math.min(prev + 1, totalPages))
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </footer>
     </div>
   );
 };
