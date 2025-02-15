@@ -43,12 +43,8 @@ const sql = neon(`${process.env.DATABASE_URL}`);
 
 async function getData() {
   try {
-    const billCount = await sql`SELECT COUNT(*) FROM bills`;
-    const totalPages = Math.ceil(billCount[0].count / 25);
-    console.log(totalPages);
-    console.log(billCount[0].count);
     const dbBills = await sql`SELECT * FROM bills`;
-    return [dbBills, totalPages];
+    return dbBills as BillType[];
   } catch (error) {
     console.error("Error fetching bills from db", error);
     return [];
@@ -158,24 +154,25 @@ export default async function Home() {
     }
   }
 
-  const results = await getData();
-  const dbBills = results[0] as BillType[];
-  const totalPages = results[1] as number;
+  const dbBills = await getData();
+
   // console.log(currentBills);
   console.log(newBills);
   console.log(updatedBills);
 
   return (
     <>
-      {/*TO-DO: FIX SUSPENSE CARD SIZING*/}
-      <Suspense fallback={<SkeletonCard />}>
-        <BillResults
-          totalPages={totalPages}
-          results={dbBills}
-          newBills={newBills}
-          updatedBills={updatedBills}
-        />
-      </Suspense>
+      <div className="h-full">
+        {/*TO-DO: FIX SUSPENSE CARD SIZING*/}
+        <Suspense fallback={<SkeletonCard />}>
+          {/* <SkeletonCard /> */}
+          <BillResults
+            results={dbBills}
+            newBills={newBills}
+            updatedBills={updatedBills}
+          />
+        </Suspense>
+      </div>
     </>
   );
 }
