@@ -7,7 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
+import {
+  handleLegiscanData,
+  getData,
+  checkIfExists,
+  handleNewQuery,
+} from "./server-actions";
+import {
+  sortBillsByRelevance,
+  sortBillsByID,
+  sortBillsByDate,
+  handleBillQuery,
+} from "@/lib/utils";
 
+import { BillType, UpdatedBillFields, NewBill } from "@/lib/types";
 import {
   Pagination,
   PaginationContent,
@@ -25,38 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-type BillType = {
-  relevance: number;
-  state: string;
-  bill_number: string;
-  bill_id: number;
-  change_hash: string;
-  url: string;
-  text_url: string;
-  research_url: string;
-  last_action_date: string;
-  last_action: string;
-  title: string;
-  created_at: Date;
-  last_updated?: Date;
-};
-
-type UpdatedBillFields = {
-  bill_id: number;
-  bill_number: string;
-  relevance?: string;
-  state?: string;
-  change_hash: string;
-  url?: string;
-  text_url?: string;
-  research_url?: string;
-  last_action_date?: string;
-  last_action?: string;
-  title?: string;
-};
-
-type NewBill = [bill_number: string, url: string];
 
 const BillResults = ({
   results,
@@ -77,75 +58,107 @@ const BillResults = ({
   const [currentBtnView, setCurrentBtnView] = useState("");
   const [searchTerms, setSearchTerms] = useState(terms);
   const [isMinus, setIsMinus] = useState<{ [key: string]: boolean }>({});
-
+  const [billsPerPage, setBillsPerPage] = useState<BillType[]>([]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(24);
   const [totalPages, setTotalPages] = useState(
-    Math.ceil(results.length / itemsPerPage)
+    Math.ceil(billArrangement.length / itemsPerPage)
   );
 
+  const fetchBills = async (newSearchTerms: string[]) => {
+    console.log(searchTerms);
+    const queryString = handleNewQueryString(newSearchTerms);
+    console.log(queryString);
+    if (newSearchTerms.length === 1) return;
+    if (newSearchTerms.length === terms.length) {
+      const db_data = await getData();
+      setBillArrangement(db_data as BillType[]);
+    } else if (newSearchTerms.length > 1) {
+      const api_data = await handleLegiscanData(queryString);
+      const checkedBills = await crossCheckBills(api_data as BillType[]);
+
+      setBillArrangement(checkedBills as BillType[]);
+      // crossCheckBills(api_data as BillType[]);
+    }
+  };
+
+  const crossCheckBills = async (bills: BillType[]) => {
+    let billResults = [];
+    for (const bill of bills) {
+      const result = await handleNewQuery(bill);
+      billResults.push(result);
+    }
+    // const newBills = bills.map(async (bill) => {
+    //   return result;
+    // });
+    return billResults;
+  };
+
+  const handleNewQueryString = (searchTerms: string[]) => {
+    let queryString = "";
+    searchTerms.forEach((item, idx) => {
+      const formattedQuery = item.replaceAll(" ", "+");
+      if (idx !== searchTerms.length - 1) {
+        queryString += `"${formattedQuery}"+OR+`;
+      } else {
+        queryString += `"${formattedQuery}"`;
+      }
+    });
+    return queryString;
+  };
+
   useEffect(() => {
-    setTotalPages(Math.ceil(results.length / itemsPerPage));
+    setTotalPages(Math.ceil(billArrangement.length / itemsPerPage));
     const startIdx = (page - 1) * itemsPerPage;
-    const currentBills = results.slice(startIdx, startIdx + itemsPerPage);
-    setBillArrangement(currentBills);
+    const currentBills = billArrangement.slice(
+      startIdx,
+      startIdx + itemsPerPage
+    );
+    setBillsPerPage(currentBills);
     window.scrollTo({ top: 0 });
-  }, [page, currentBtnView, itemsPerPage]);
+  }, [page, currentBtnView, itemsPerPage, billArrangement]);
 
   const sortbydate = (results: BillType[]) => {
-    const billsByLatest = results.sort(
-      (a, b) =>
-        new Date(b.last_action_date).getTime() -
-        new Date(a.last_action_date).getTime()
-    );
-    window.scrollTo({ top: 0 });
+    const billsByLatest = sortBillsByDate(results);
     setBillArrangement(billsByLatest);
     setCurrentBtnView("date");
     setPage(1);
   };
 
   const sortByRelevance = (results: BillType[]) => {
-    const billsByRelevance = results.sort((a, b) => b.relevance - a.relevance);
-    window.scrollTo({ top: 0 });
+    const billsByRelevance = sortBillsByRelevance(results);
     setCurrentBtnView("relevance");
     setBillArrangement(billsByRelevance);
     setPage(1);
   };
 
   const sortByBillNum = (results: BillType[]) => {
-    const billsByBillNum = results.sort((a, b) => a.bill_id - b.bill_id);
-
-    window.scrollTo({ top: 0 });
+    const billsByBillNum = sortBillsByID(results);
     setCurrentBtnView("billID");
     setBillArrangement(billsByBillNum);
     setPage(1);
   };
 
   const handleQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const filteredBills = results.filter((bill: BillType) => {
-      return Object.values(bill).some(
-        (value) =>
-          typeof value === "string" &&
-          value.toLowerCase().includes(e.target.value.toLowerCase())
-      );
-    });
+    const filteredBills = handleBillQuery(results, e);
     window.scrollTo({ top: 0 });
     setBillArrangement(filteredBills);
     setPage(1);
   };
 
-  const handleSearch = (term: string) => {
-    // if (searchTerms.length == 1) return;
+  const handleSearch = async (term: string) => {
     console.log(term);
     if (searchTerms.includes(term)) {
       const newTerms = searchTerms.filter((originalTerm) => {
         return term !== originalTerm;
       });
       console.log(newTerms);
+      await fetchBills(newTerms);
       setSearchTerms(newTerms);
     } else {
       searchTerms.push(term);
       console.log(searchTerms);
+      await fetchBills(searchTerms);
     }
   };
 
@@ -159,7 +172,7 @@ const BillResults = ({
               currentBtnView === "date" ? "bg-slate-100" : "bg-white"
             )}
             variant="outline"
-            onClick={() => sortbydate(results)}
+            onClick={() => sortbydate(billArrangement)}
           >
             View latest
           </Button>
@@ -169,7 +182,7 @@ const BillResults = ({
               currentBtnView === "relevance" ? "bg-slate-100" : "bg-white"
             )}
             variant="outline"
-            onClick={() => sortByRelevance(results)}
+            onClick={() => sortByRelevance(billArrangement)}
           >
             View by Relevance
           </Button>
@@ -179,7 +192,7 @@ const BillResults = ({
               currentBtnView === "billID" ? "bg-slate-100" : "bg-white"
             )}
             variant="outline"
-            onClick={() => sortByBillNum(results)}
+            onClick={() => sortByBillNum(billArrangement)}
           >
             View by Bill ID
           </Button>
@@ -215,12 +228,21 @@ const BillResults = ({
               key={idx}
             >
               <button
-                onClick={() => {
+                onClick={async () => {
                   handleSearch(term);
-                  setIsMinus((prev) => ({ ...prev, [term]: !prev[term] }));
+
+                  {
+                    setIsMinus((prev) => ({
+                      ...prev,
+                      [term]: !prev[term],
+                    }));
+                  }
                 }}
                 className={cn(
                   isMinus[term] ? "font-normal" : "font-semibold",
+                  searchTerms.length === 1 && !isMinus[term]
+                    ? "pointer-events-none"
+                    : "pointer-events-auto",
                   "pr-2 text-xs left-0  text-gray-500 py-0 hover:scale-105"
                 )}
               >
@@ -234,7 +256,7 @@ const BillResults = ({
       <div className="w-fit max-w-md min-w-60 md:min-w-96 md:max-w-xl flex flex-col p-3 mt-5 gap-y-1  rounded-lg bg-slate-100">
         <h1 className="text-gray-500 text-xs md:text-sm left-0">
           <span className="font-semibold">Results: </span>
-          {results.length}
+          {billArrangement.length}
         </h1>
         <div className="text-gray-500 text-xs md:text-sm left-0 w-full flex flex-wrap items-center gap-x-1">
           <span className="font-semibold">
@@ -275,7 +297,7 @@ const BillResults = ({
         </div>
       </div>
       <main className="relative p-5 w-full md:max-w-screen-lg pb-10 flex flex-col items-start md:items-stretch md:grid md:grid-cols-2 md:gap-x-5">
-        {billArrangement.map((val: BillType, idx: number) => (
+        {billsPerPage.map((val: BillType, idx: number) => (
           <div
             key={idx}
             className="text-xs md:text-sm gap-y-3 rounded-lg w-full items-start md:border justify-start text-left p-5 flex flex-col m-3 "
@@ -325,16 +347,25 @@ const BillResults = ({
               {val.last_action}
             </p>
             <p>
-              <span className="font-bold text-gray-500">Created at:</span>{" "}
-              {val.created_at.toLocaleString("en-US", {
-                timeZone: "Pacific/Honolulu",
-              })}
+              <span className="font-bold text-gray-500">
+                {val.created_at ? "Created at:" : ""}
+              </span>{" "}
+              {val.created_at ? (
+                val.created_at.toLocaleString("en-US", {
+                  timeZone: "Pacific/Honolulu",
+                })
+              ) : (
+                <button>add to db</button>
+              )}
             </p>
             <p>
-              <span className="font-bold text-gray-500">Last updated:</span>{" "}
-              {val.last_updated
-                ? val.last_updated.toLocaleString("en-US", {})
-                : val.created_at.toLocaleString("en-US", {})}
+              <span className="font-bold text-gray-500">
+                {val.last_updated ? "Last updated:" : ""}
+              </span>{" "}
+              {val.last_updated &&
+                val.last_updated.toLocaleString("en-US", {
+                  timeZone: "Pacific/Honolulu",
+                })}
             </p>
           </div>
         ))}
@@ -344,7 +375,12 @@ const BillResults = ({
           <Label className="text-xs md:text-sm text-gray-600">
             Bills per page
           </Label>
-          <Select onValueChange={(e) => setItemsPerPage(Number(e))}>
+          <Select
+            onValueChange={(e) => {
+              setItemsPerPage(Number(e));
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-fit px-3 text-xs ">
               <SelectValue className="" placeholder="24" />
             </SelectTrigger>
@@ -368,7 +404,6 @@ const BillResults = ({
                 )}
                 onClick={() => {
                   setPage((prev) => Math.max(prev - 1, 1));
-                  console.log("clicked");
                 }}
               />
             </PaginationItem>
