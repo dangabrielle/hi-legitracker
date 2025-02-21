@@ -49,7 +49,9 @@ export async function handleBill(
       } = bill;
 
       if (!billSet.has(bill_id)) {
-        await sql`INSERT INTO bills (bill_id, bill_number, change_hash, last_action, last_action_date, relevance, research_url, state, text_url, title, url) VALUES (${bill_id}, ${bill_number}, ${change_hash}, ${last_action}, ${last_action_date}, ${relevance}, ${research_url}, ${state},  ${text_url}, ${title}, ${url})`;
+        // await sql`INSERT INTO bills (bill_id, bill_number, change_hash, last_action, last_action_date, relevance, research_url, state, text_url, title, url) VALUES (${bill_id}, ${bill_number}, ${change_hash}, ${last_action}, ${last_action_date}, ${relevance}, ${research_url}, ${state},  ${text_url}, ${title}, ${url})`;
+
+        await createBillEntry(bill);
         newBills.push([bill_number, url]);
       } else {
         const dbBill = existingBillsMap.get(bill_id);
@@ -82,6 +84,31 @@ export async function handleBill(
     }
   } catch (error) {
     console.error(error);
+  }
+}
+
+export async function createBillEntry(bill: Bill): Promise<string> {
+  try {
+    const {
+      bill_id,
+      bill_number,
+      change_hash,
+      last_action,
+      last_action_date,
+      relevance,
+      research_url,
+      state,
+      text_url,
+      title,
+      url,
+    } = bill;
+
+    await sql`INSERT INTO bills (bill_id, bill_number, change_hash, last_action, last_action_date, relevance, research_url, state, text_url, title, url) VALUES (${bill_id}, ${bill_number}, ${change_hash}, ${last_action}, ${last_action_date}, ${relevance}, ${research_url}, ${state},  ${text_url}, ${title}, ${url})`;
+    console.log(`Bill ${bill_number} successfully added.`);
+    return "OK";
+  } catch (error) {
+    console.error("Error creating bill entry", error);
+    return "ERROR";
   }
 }
 
