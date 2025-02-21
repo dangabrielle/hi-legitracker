@@ -1,4 +1,3 @@
-/* eslint-disable */
 "use client";
 import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -8,7 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { queryTerms, handleQueryString } from "@/lib/utils";
 
-import { handleLegiscanData, getData, handleNewQuery } from "./server-actions";
+import {
+  handleLegiscanData,
+  getData,
+  handleNewQuery,
+  createBillEntry,
+} from "./server-actions";
 import {
   sortBillsByRelevance,
   sortBillsByID,
@@ -19,6 +23,8 @@ import {
 import { Bill, UpdatedBillFields, NewBill } from "@/lib/types";
 import PaginationFooter from "@/components/pagination-footer";
 
+const terms = queryTerms;
+
 const BillResults = ({
   results,
   newBills,
@@ -28,7 +34,6 @@ const BillResults = ({
   newBills: NewBill[];
   updatedBills: UpdatedBillFields[];
 }) => {
-  const terms = queryTerms;
   const [billArrangement, setBillArrangement] = useState<Bill[]>(results);
   const [currentBtnView, setCurrentBtnView] = useState("");
   const [searchTerms, setSearchTerms] = useState(terms);
@@ -36,6 +41,7 @@ const BillResults = ({
   const [billsPerPage, setBillsPerPage] = useState<Bill[]>([]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(24);
+
   const [totalPages, setTotalPages] = useState(
     Math.ceil(billArrangement.length / itemsPerPage)
   );
@@ -124,6 +130,19 @@ const BillResults = ({
       searchTerms.push(term);
 
       await fetchBills(searchTerms);
+    }
+  };
+
+  const handleNewEntry = async (
+    bill: Bill,
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    const button = e.target as HTMLButtonElement;
+    const res = await createBillEntry(bill);
+    if (res === "OK") {
+      button.textContent = "Added!";
+    } else {
+      button.textContent = "Error";
     }
   };
 
@@ -252,7 +271,7 @@ const BillResults = ({
           {updatedBills.length > 0
             ? updatedBills.map((updatedBill) => (
                 <Link
-                  className="hover:bg-white px-1 py-0 text-xs md:text-sm rounded-md"
+                  className="hover:font-bold px-1 py-0 text-xs md:text-sm rounded-md"
                   key={updatedBill.bill_id}
                   href={`${updatedBill.url}`}
                   target="_blank"
@@ -322,7 +341,15 @@ const BillResults = ({
                   timeZone: "Pacific/Honolulu",
                 })
               ) : (
-                <button>add to db</button>
+                <Button
+                  variant="outline"
+                  className="text-xs font-bold text-cyan-800 bg-slate-100"
+                  onClick={(e) => {
+                    handleNewEntry(val, e);
+                  }}
+                >
+                  Track Bill
+                </Button>
               )}
             </p>
             <p>
