@@ -1,4 +1,4 @@
-export type BillType = {
+export type Bill = {
   relevance: number;
   state: string;
   bill_number: string;
