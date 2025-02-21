@@ -6,13 +6,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import Image from "next/image";
-import {
-  handleLegiscanData,
-  getData,
-  checkIfExists,
-  handleNewQuery,
-} from "./server-actions";
+import { queryTerms, handleQueryString } from "@/lib/utils";
+
+import { handleLegiscanData, getData, handleNewQuery } from "./server-actions";
 import {
   sortBillsByRelevance,
   sortBillsByID,
@@ -20,45 +16,24 @@ import {
   handleBillQuery,
 } from "@/lib/utils";
 
-import { BillType, UpdatedBillFields, NewBill } from "@/lib/types";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Bill, UpdatedBillFields, NewBill } from "@/lib/types";
+import PaginationFooter from "@/components/pagination-footer";
 
 const BillResults = ({
   results,
   newBills,
   updatedBills,
 }: {
-  results: BillType[];
+  results: Bill[];
   newBills: NewBill[];
   updatedBills: UpdatedBillFields[];
 }) => {
-  const terms = [
-    "UHERO",
-    "economic research organization",
-    "task force",
-    "working group",
-  ];
-  const [billArrangement, setBillArrangement] = useState<BillType[]>(results);
+  const terms = queryTerms;
+  const [billArrangement, setBillArrangement] = useState<Bill[]>(results);
   const [currentBtnView, setCurrentBtnView] = useState("");
   const [searchTerms, setSearchTerms] = useState(terms);
   const [isMinus, setIsMinus] = useState<{ [key: string]: boolean }>({});
-  const [billsPerPage, setBillsPerPage] = useState<BillType[]>([]);
+  const [billsPerPage, setBillsPerPage] = useState<Bill[]>([]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(24);
   const [totalPages, setTotalPages] = useState(
@@ -66,45 +41,36 @@ const BillResults = ({
   );
 
   const fetchBills = async (newSearchTerms: string[]) => {
-    console.log(searchTerms);
-    const queryString = handleNewQueryString(newSearchTerms);
-    console.log(queryString);
+    const queryString = handleQueryString(newSearchTerms);
     if (newSearchTerms.length === 1) return;
     if (newSearchTerms.length === terms.length) {
       const db_data = await getData();
-      setBillArrangement(db_data as BillType[]);
+      setBillArrangement(db_data as Bill[]);
     } else if (newSearchTerms.length > 1) {
       const api_data = await handleLegiscanData(queryString);
-      const checkedBills = await crossCheckBills(api_data as BillType[]);
-
-      setBillArrangement(checkedBills as BillType[]);
-      // crossCheckBills(api_data as BillType[]);
+      const checkedBills = await handleNewQuery(api_data as Bill[]);
+      setBillArrangement(checkedBills as Bill[]);
     }
+    setPage(1);
   };
 
-  const crossCheckBills = async (bills: BillType[]) => {
-    let billResults = [];
-    for (const bill of bills) {
-      const result = await handleNewQuery(bill);
-      billResults.push(result);
+  const handlePageSelection = (page: number, action: string) => {
+    switch (action) {
+      case "prev":
+        setPage((prev) => Math.max(prev - 1, 1));
+        break;
+      case "next":
+        setPage((prev) => Math.min(prev + 1, page));
+        break;
+      case "start":
+        setPage(page);
+        break;
+      case "end":
+        setPage(page);
+        break;
+      default:
+        setPage(1);
     }
-    // const newBills = bills.map(async (bill) => {
-    //   return result;
-    // });
-    return billResults;
-  };
-
-  const handleNewQueryString = (searchTerms: string[]) => {
-    let queryString = "";
-    searchTerms.forEach((item, idx) => {
-      const formattedQuery = item.replaceAll(" ", "+");
-      if (idx !== searchTerms.length - 1) {
-        queryString += `"${formattedQuery}"+OR+`;
-      } else {
-        queryString += `"${formattedQuery}"`;
-      }
-    });
-    return queryString;
   };
 
   useEffect(() => {
@@ -118,21 +84,21 @@ const BillResults = ({
     window.scrollTo({ top: 0 });
   }, [page, currentBtnView, itemsPerPage, billArrangement]);
 
-  const sortbydate = (results: BillType[]) => {
+  const sortbydate = (results: Bill[]) => {
     const billsByLatest = sortBillsByDate(results);
     setBillArrangement(billsByLatest);
     setCurrentBtnView("date");
     setPage(1);
   };
 
-  const sortByRelevance = (results: BillType[]) => {
+  const sortByRelevance = (results: Bill[]) => {
     const billsByRelevance = sortBillsByRelevance(results);
     setCurrentBtnView("relevance");
     setBillArrangement(billsByRelevance);
     setPage(1);
   };
 
-  const sortByBillNum = (results: BillType[]) => {
+  const sortByBillNum = (results: Bill[]) => {
     const billsByBillNum = sortBillsByID(results);
     setCurrentBtnView("billID");
     setBillArrangement(billsByBillNum);
@@ -140,24 +106,23 @@ const BillResults = ({
   };
 
   const handleQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const filteredBills = handleBillQuery(results, e);
-    window.scrollTo({ top: 0 });
-    setBillArrangement(filteredBills);
+    const filteredBills = handleBillQuery(billArrangement, e);
+    setBillsPerPage(filteredBills);
+    setTotalPages(Math.ceil(filteredBills.length / itemsPerPage));
     setPage(1);
   };
 
   const handleSearch = async (term: string) => {
-    console.log(term);
     if (searchTerms.includes(term)) {
       const newTerms = searchTerms.filter((originalTerm) => {
         return term !== originalTerm;
       });
-      console.log(newTerms);
+
       await fetchBills(newTerms);
       setSearchTerms(newTerms);
     } else {
       searchTerms.push(term);
-      console.log(searchTerms);
+
       await fetchBills(searchTerms);
     }
   };
@@ -207,7 +172,9 @@ const BillResults = ({
           <Input
             className=" text-xs md:text-sm"
             type="search"
-            onChange={(e) => handleQuery(e)}
+            onChange={(e) => {
+              handleQuery(e);
+            }}
             placeholder="Search "
           />
         </div>
@@ -297,7 +264,7 @@ const BillResults = ({
         </div>
       </div>
       <main className="relative p-5 w-full md:max-w-screen-lg pb-10 flex flex-col items-start md:items-stretch md:grid md:grid-cols-2 md:gap-x-5">
-        {billsPerPage.map((val: BillType, idx: number) => (
+        {billsPerPage.map((val: Bill, idx: number) => (
           <div
             key={idx}
             className="text-xs md:text-sm gap-y-3 rounded-lg w-full items-start md:border justify-start text-left p-5 flex flex-col m-3 "
@@ -371,96 +338,17 @@ const BillResults = ({
         ))}
       </main>
       <footer className="sticky bg-gradient-to-t from-white to-0% rounded-lg justify-center md:pl-5 bg-white py-2 bottom-0  gap-y-4 items-center w-full md:w-fit flex flex-col md:grid  md:grid-cols-[1fr,2fr] max-w-xl md:gap-x-3">
-        <div className="flex items-center gap-x-3 justify-center shrink">
-          <Label className="text-xs md:text-sm text-gray-600">
-            Bills per page
-          </Label>
-          <Select
-            onValueChange={(e) => {
-              setItemsPerPage(Number(e));
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-fit px-3 text-xs ">
-              <SelectValue className="" placeholder="24" />
-            </SelectTrigger>
-            <SelectContent className="">
-              <SelectItem className="" value="24">
-                24
-              </SelectItem>
-              <SelectItem value="50">50 </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Pagination className="grow">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                className={cn(
-                  "cursor-pointer text-xs md:text-sm",
-                  page === 1
-                    ? "pointer-events-none opacity-50"
-                    : "pointer-events-auto opacity-100"
-                )}
-                onClick={() => {
-                  setPage((prev) => Math.max(prev - 1, 1));
-                }}
-              />
-            </PaginationItem>
-            <PaginationItem className={cn(page === 1 ? "hidden" : "")}>
-              <PaginationLink
-                className="text-xs md:text-sm"
-                onClick={() => setPage(1)}
-              >
-                1
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem
-              className={cn(
-                "text-xs md:text-sm",
-                page === 1 ? "hidden" : "block"
-              )}
-            >
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink className="border text-xs md:text-sm">
-                {page}
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis
-                className={cn(
-                  "text-xs md:text-sm",
-                  page === totalPages ? "hidden" : ""
-                )}
-              />
-            </PaginationItem>
-            <PaginationItem
-              className={cn(page === totalPages ? "hidden" : "block")}
-            >
-              <PaginationLink
-                className="text-xs md:text-sm"
-                onClick={() => setPage(totalPages)}
-              >
-                {totalPages}
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                className={cn(
-                  "cursor-pointer text-xs md:text-sm",
-                  page === totalPages
-                    ? "pointer-events-none opacity-50"
-                    : "pointer-events-auto opacity-100"
-                )}
-                onClick={() =>
-                  setPage((prev) => Math.min(prev + 1, totalPages))
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <PaginationFooter
+          page={page}
+          totalPages={totalPages}
+          handleBillsPerPage={(e) => {
+            setItemsPerPage(Number(e));
+            setPage(1);
+          }}
+          handlePageSelection={(page, action) =>
+            handlePageSelection(page, action)
+          }
+        />
       </footer>
     </div>
   );
