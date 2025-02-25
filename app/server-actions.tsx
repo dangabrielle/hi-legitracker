@@ -2,9 +2,25 @@
 
 import { neon } from "@neondatabase/serverless";
 import { Bill, UpdatedBillFields, NewBill } from "@/lib/types";
+import Twilio from "twilio/lib/rest/Twilio";
+
+const accountSid = process.env.TWILIO_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioPhoneNumber = process.env.TWILIO_PHONE;
+const client = new Twilio(accountSid, authToken);
 
 const legiscanKey = process.env.LEGISCAN_KEY;
 const sql = neon(`${process.env.DATABASE_URL}`);
+
+export async function createMessage(body: string) {
+  const message = await client.messages.create({
+    body: body,
+    from: twilioPhoneNumber,
+    to: "+18083886618",
+  });
+
+  console.log(message.body);
+}
 
 export async function getData(): Promise<Bill[]> {
   try {
@@ -52,7 +68,7 @@ export async function handleBill(
         // await sql`INSERT INTO bills (bill_id, bill_number, change_hash, last_action, last_action_date, relevance, research_url, state, text_url, title, url) VALUES (${bill_id}, ${bill_number}, ${change_hash}, ${last_action}, ${last_action_date}, ${relevance}, ${research_url}, ${state},  ${text_url}, ${title}, ${url})`;
 
         await createBillEntry(bill);
-        newBills.push([bill_number, url]);
+        newBills.push([bill_number, url, title]);
       } else {
         const dbBill = existingBillsMap.get(bill_id);
         if (dbBill && dbBill?.change_hash !== change_hash) {
@@ -73,7 +89,7 @@ export async function handleBill(
                 ? last_action_date
                 : "",
             last_action: last_action !== dbBill.last_action ? last_action : "",
-            title: title !== dbBill.title ? title : "",
+            title: title !== dbBill.title ? title : dbBill.title,
             updatedDate: new Date(),
           });
           // updates bill accordingly
