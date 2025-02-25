@@ -136,15 +136,20 @@ const BillResults = ({
     bill: Bill,
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
-    e.preventDefault();
     const button = e.target as HTMLButtonElement;
     const res = await createBillEntry(bill);
     if (res === "OK") {
-      button.textContent = "Added!";
-      button.style.pointerEvents = "none";
-      await fetchBills(searchTerms);
+      button.style.display = "none";
+      setBillArrangement((prev) =>
+        prev.map((prevBill) =>
+          prevBill.bill_id === bill.bill_id
+            ? { ...prevBill, created_at: new Date() }
+            : prevBill
+        )
+      );
     } else {
-      button.textContent = "Error";
+      button.textContent = "Error, entry already exists.";
+      button.style.pointerEvents = "none";
     }
   };
 
@@ -285,9 +290,9 @@ const BillResults = ({
         </div>
       </div>
       <main className="relative p-5 w-full md:max-w-screen-lg pb-10 flex flex-col items-start md:items-stretch md:grid md:grid-cols-2 md:gap-x-5">
-        {billsPerPage.map((val: Bill, idx: number) => (
+        {billsPerPage.map((val: Bill) => (
           <div
-            key={idx}
+            key={val.bill_id}
             className="text-xs md:text-sm gap-y-3 rounded-lg w-full items-start md:border justify-start text-left p-5 flex flex-col m-3 "
           >
             <div className="flex w-full space-x-5 justify-between">
