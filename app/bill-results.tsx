@@ -57,7 +57,6 @@ const BillResults = ({
       const checkedBills = await handleNewQuery(api_data as Bill[]);
       setBillArrangement(checkedBills as Bill[]);
     }
-    setPage(1);
   };
 
   const handlePageSelection = (page: number, action: string) => {
@@ -87,7 +86,7 @@ const BillResults = ({
       startIdx + itemsPerPage
     );
     setBillsPerPage(currentBills);
-    window.scrollTo({ top: 0 });
+    // window.scrollTo({ top: 0 });
   }, [page, currentBtnView, itemsPerPage, billArrangement]);
 
   const sortbydate = (results: Bill[]) => {
@@ -137,10 +136,13 @@ const BillResults = ({
     bill: Bill,
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
+    e.preventDefault();
     const button = e.target as HTMLButtonElement;
     const res = await createBillEntry(bill);
     if (res === "OK") {
       button.textContent = "Added!";
+      button.style.pointerEvents = "none";
+      await fetchBills(searchTerms);
     } else {
       button.textContent = "Error";
     }
