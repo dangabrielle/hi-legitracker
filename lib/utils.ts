@@ -45,7 +45,7 @@ export function handleBillQuery(
         value.toLowerCase().includes(e.target.value.toLowerCase())
     );
   });
-  // window.scrollTo({ top: 0 });
+  window.scrollTo({ top: 0 });
   return filteredBills;
 }
 
