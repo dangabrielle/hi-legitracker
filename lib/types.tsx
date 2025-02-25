@@ -29,4 +29,4 @@ export type UpdatedBillFields = {
   updatedDate: Date;
 };
 
-export type NewBill = [bill_number: string, url: string];
+export type NewBill = [bill_number: string, url: string, title: string];
