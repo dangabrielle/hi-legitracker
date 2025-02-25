@@ -57,6 +57,8 @@ const BillResults = ({
       const checkedBills = await handleNewQuery(api_data as Bill[]);
       setBillArrangement(checkedBills as Bill[]);
     }
+
+    setPage(1);
   };
 
   const handlePageSelection = (page: number, action: string) => {
