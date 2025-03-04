@@ -95,11 +95,36 @@ export async function handleBill(
           // updates bill accordingly
           await sql`UPDATE bills SET change_hash = ${change_hash}, last_action=${last_action}, last_action_date=${last_action_date}, relevance=${relevance}, research_url=${research_url}, state=${state}, text_url=${text_url}, title=${title}, url=${url}, last_updated=now() WHERE (bill_number = ${bill_number}) AND bill_id = ${bill_id}`;
           console.log("hash changed");
+          await sendMessage(newBills, updatedBills);
         }
       }
     }
   } catch (error) {
     console.error(error);
+  }
+}
+
+async function sendMessage(
+  newBills: NewBill[],
+  updatedBills: UpdatedBillFields[]
+) {
+  if (newBills.length > 0 || updatedBills.length > 0) {
+    let message = `Updates as of ${new Date().toDateString()}:\n\n`;
+    if (updatedBills.length > 0) {
+      updatedBills.forEach((bill) => {
+        const { title, bill_number, url } = bill;
+        message += `${title} (${bill_number}): ${url}\n\n`;
+      });
+    }
+
+    if (newBills.length > 0) {
+      message += "New Bills:\n";
+      newBills.forEach((bill) => {
+        const [bill_number, url, title] = bill;
+        message += `${title} (${bill_number}): ${url}\n\n`;
+      });
+    }
+    await createMessage(message);
   }
 }
 
