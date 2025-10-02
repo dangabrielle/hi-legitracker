@@ -3,15 +3,8 @@ The Hawaii State Legislation Tracker is a web-based application that tracks stat
 
 This project was developed to help economists at UHERO to monitor and respond proactively to state legislation that could impact operations. As UHERO often contracts with the state, certain proposed bills may affect the availability or structure of that work. By using this tool, we can engage early in the legislative process to advocate for or against specific measures.
 
-
-Receive updates and alerts on tracked legislation.
-What does this project do?
-Why is this project useful?
-How do I get started?
-Where can I get more help, if I need it?
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
 ## Getting Started
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 First, clone this repository: `git clone https://github.com/dangabrielle/hi-legitracker.git`  
 Install dependencies: `npm install` or `yarn install` or `pnpm install` or `bun install` <br />
